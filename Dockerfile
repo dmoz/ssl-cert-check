@@ -17,7 +17,7 @@ COPY . .
 RUN go build -o tls-monitor main.go
 
 # Expose the port (not needed in this case, but good practice)
-EXPOSE 443
+# EXPOSE 443
 
 # Run the command to start the application
 CMD ["./tls-monitor"]

@@ -16,6 +16,7 @@ type Config struct {
 	Emails                     []string   `json:"emails"`
 	Smtp                       SmtpConfig `json:"smtp"`
 	ExpirationWarningThreshold Duration   `json:"expirationWarningThreshold"`
+	Timeout                    Duration   `json:"timeout"`
 }
 
 type SmtpConfig struct {
@@ -100,12 +101,17 @@ func main() {
 			port = "443"
 		}
 
-		// Connect to the site and get the TLS certificate
-		conn, err := tls.Dial("tcp", net.JoinHostPort(host, port), &tls.Config{InsecureSkipVerify: true})
+		// Connect to the site and get the TLS certificate with a timeout
+		conn, err := tls.DialWithDialer(&net.Dialer{Timeout: time.Duration(config.Timeout)}, "tcp", net.JoinHostPort(host, port), &tls.Config{InsecureSkipVerify: true})
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("Error connecting to %s: %v", site, err)
+			continue
 		}
+
 		defer conn.Close()
+
+		// Set a deadline for the connection
+		conn.SetDeadline(time.Now().Add(time.Duration(config.Timeout)))
 
 		// Get the TLS certificate
 		cert := conn.ConnectionState().PeerCertificates[0]
