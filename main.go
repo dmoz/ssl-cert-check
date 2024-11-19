@@ -85,7 +85,7 @@ func sendEmail(emails []string, smtpConfig SmtpConfig, site string, expirationDa
 // warning email if the certificate on the site is about to expire.
 func main() {
 	// Set up logging
-	file, err := os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
 	if err != nil {
 		log.Fatal("Failed to open log file:", err)
 	}
