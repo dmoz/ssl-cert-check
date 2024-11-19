@@ -34,21 +34,23 @@ The program uses a JSON configuration file (`config.json`) to store the list of 
     "from": "tls-monitor@example.com",
     "password": "your-smtp-password"
   },
-  "expirationWarningThreshold": "168h"
+  "expirationWarningThreshold": "168h",
+  "timeout": "5s"
 }
 ```
 
 ## Usage
 
-1. Build the program using `go build main.go`
+1. Build the program using `go build ssl-cert-check.go`
 2. Create a `config.json` file with your desired configuration
-3. Run the program using `./main`
+3. Run the program using `./ssl-cert-check`
 
 ## Notes
 
 * The program uses the default port 443 for HTTPS connections. If a website uses a different port, you can specify it in the `sites` list (e.g. "example.com:8443").
 * The program uses a simple email notification system. You can modify the `sendEmail` function to use a different email library or service.
 * The program uses a configurable threshold for expiration warnings. You can adjust this value to suit your needs.
+* The program uses a configurable timeout for connecting and getting certificates. You can adjust this value to suit your needs.
 
 
 
