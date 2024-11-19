@@ -105,8 +105,7 @@ func main() {
 		if expirationDate.Before(now) || expirationDate.Sub(now) < time.Duration(config.ExpirationWarningThreshold) {
 			// Send an email with the expiration date
 			sendEmail(config.Emails, config.Smtp, site, expirationDate)
-		} else {
-			log.Printf("Certificate on %s is valid until %s\n", site, expirationDate.Format(time.RFC822))
 		}
+		log.Printf("Certificate on %s is valid until %s\n", site, expirationDate.Format(time.RFC822))
 	}
 }
