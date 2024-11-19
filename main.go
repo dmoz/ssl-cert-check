@@ -2,55 +2,41 @@ package main
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/smtp"
 	"os"
 	"time"
 )
 
 type Config struct {
-	Sites  []string `json:"sites"`
-	Emails []string `json:"emails"`
-	Smtp   SmtpConfig `json:"smtp"`
+	Sites                      []string   `json:"sites"`
+	Emails                     []string   `json:"emails"`
+	Smtp                       SmtpConfig `json:"smtp"`
+	ExpirationWarningThreshold Duration   `json:"expirationWarningThreshold"`
 }
 
 type SmtpConfig struct {
-	Server string `json:"server"`
-	From   string `json:"from"`
+	Server   string `json:"server"`
+	From     string `json:"from"`
 	Password string `json:"password"`
 }
 
-func main() {
-	// Load config from file
-	configFile := "config.json"
-	config, err := loadConfig(configFile)
+type Duration time.Duration
+
+func (d *Duration) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+	dur, err := time.ParseDuration(s)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-
-	// Monitor each site
-	for _, site := range config.Sites {
-		// Connect to the site and get the TLS certificate
-		conn, err := tls.Dial("tcp", site, &tls.Config{InsecureSkipVerify: true})
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer conn.Close()
-
-		// Get the TLS certificate
-		cert := conn.ConnectionState().PeerCertificates[0]
-
-		// Check if the certificate is expired or near expiration
-		expirationDate := cert.NotAfter
-		now := time.Now()
-		if expirationDate.Before(now) || expirationDate.Sub(now) < 7*24*time.Hour {
-			// Send an email with the expiration date
-			sendEmail(config.Emails, config.Smtp, site, expirationDate)
-		}
-	}
+	*d = Duration(dur)
+	return nil
 }
 
 func loadConfig(filename string) (*Config, error) {
@@ -71,7 +57,7 @@ func loadConfig(filename string) (*Config, error) {
 func sendEmail(emails []string, smtpConfig SmtpConfig, site string, expirationDate time.Time) {
 	for _, email := range emails {
 		// Set up the email message
-		subject := "Certificate Expiration Warning"
+		subject := fmt.Sprintf("%s Certificate Expiration Warning", site)
 		body := fmt.Sprintf("The certificate on %s is set to expire on %s.", site, expirationDate.Format(time.RFC822))
 		msg := fmt.Sprintf("Subject: %s\r\n\r\n%s", subject, body)
 
@@ -82,5 +68,45 @@ func sendEmail(emails []string, smtpConfig SmtpConfig, site string, expirationDa
 			log.Fatal(err)
 		}
 		log.Printf("Email sent to %s successfully\n", email)
+	}
+}
+
+func main() {
+	// Load config from file
+	configFile := "config.json"
+	config, err := loadConfig(configFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Monitor each site
+	for _, site := range config.Sites {
+		// Split the site into host and port
+		host, port, err := net.SplitHostPort(site)
+		if err != nil {
+			// If no port is specified, use the default port 443
+			host = site
+			port = "443"
+		}
+
+		// Connect to the site and get the TLS certificate
+		conn, err := tls.Dial("tcp", net.JoinHostPort(host, port), &tls.Config{InsecureSkipVerify: true})
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer conn.Close()
+
+		// Get the TLS certificate
+		cert := conn.ConnectionState().PeerCertificates[0]
+
+		// Check if the certificate is expired or near expiration
+		expirationDate := cert.NotAfter
+		now := time.Now()
+		if expirationDate.Before(now) || expirationDate.Sub(now) < time.Duration(config.ExpirationWarningThreshold) {
+			// Send an email with the expiration date
+			sendEmail(config.Emails, config.Smtp, site, expirationDate)
+		} else {
+			log.Printf("Certificate on %s is valid until %s\n", site, expirationDate.Format(time.RFC822))
+		}
 	}
 }
