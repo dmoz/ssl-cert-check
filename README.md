@@ -49,3 +49,19 @@ The program uses a JSON configuration file (`config.json`) to store the list of 
 * The program uses the default port 443 for HTTPS connections. If a website uses a different port, you can specify it in the `sites` list (e.g. "example.com:8443").
 * The program uses a simple email notification system. You can modify the `sendEmail` function to use a different email library or service.
 * The program uses a configurable threshold for expiration warnings. You can adjust this value to suit your needs.
+
+
+
+To build the Docker image, run the following command:
+
+```bash
+docker build -t tls-monitor .
+```
+
+To run the Docker container, run the following command:
+
+```bash
+docker run -d --name tls-monitor tls-monitor
+```
+
+Note: You'll need to create a `config.json` file in the same directory as the Dockerfile, or mount a volume with the configuration file when running the container.
