@@ -26,6 +26,8 @@ type SmtpConfig struct {
 
 type Duration time.Duration
 
+// UnmarshalJSON implements the json.Unmarshaler interface.
+// It parses a duration from a string, e.g. "1h" or "2h45m".
 func (d *Duration) UnmarshalJSON(b []byte) error {
 	var s string
 	if err := json.Unmarshal(b, &s); err != nil {
@@ -39,6 +41,9 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// loadConfig reads a configuration file in JSON format from the specified filename,
+// unmarshals its contents into a Config struct, and returns a pointer to the Config.
+// It returns an error if the file cannot be read or if the JSON cannot be unmarshaled.
 func loadConfig(filename string) (*Config, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
@@ -54,6 +59,9 @@ func loadConfig(filename string) (*Config, error) {
 	return &config, nil
 }
 
+// sendEmail sends a warning email to the specified email addresses
+// when the certificate for the specified site is about to expire.
+// The email is sent using the specified SMTP config.
 func sendEmail(emails []string, smtpConfig SmtpConfig, site string, expirationDate time.Time) {
 	for _, email := range emails {
 		// Set up the email message
@@ -71,6 +79,9 @@ func sendEmail(emails []string, smtpConfig SmtpConfig, site string, expirationDa
 	}
 }
 
+// main runs the certificate expiration monitor. It loads the configuration from
+// config.json, monitors each site specified in the configuration, and sends a
+// warning email if the certificate on the site is about to expire.
 func main() {
 	// Load config from file
 	configFile := "config.json"
