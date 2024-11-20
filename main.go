@@ -89,6 +89,8 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to open log file:", err)
 	}
+	defer file.Close()
+
 	log.SetOutput(file)
 
 	// Load config from file
